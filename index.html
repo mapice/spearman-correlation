@@ -1,0 +1,1941 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Spearman Excel</title>
+  <script src="./vendor/xlsx.full.min.js"></script>
+  <script src="./vendor/lucide.min.js"></script>
+  <style>
+    :root {
+      --bg: #fafafa;
+      --surface: #ffffff;
+      --surface-soft: #f5f5f7;
+      --border: #e5e5e7;
+      --border-strong: #c7c7cc;
+      --text: #1d1d1f;
+      --muted: #6e6e73;
+      --accent: #007aff;
+      --accent-dark: #0066cc;
+      --accent-soft: #eef6ff;
+      --danger: #d92d20;
+      --warning: #b54708;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+      --radius: 8px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background: var(--bg);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+    }
+
+    .app {
+      width: min(1500px, 100%);
+      margin: 0 auto;
+      padding: 22px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .title-group {
+      min-width: 0;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.35rem, 1.2rem + 0.5vw, 1.9rem);
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 0.94rem;
+      line-height: 1.45;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 36px;
+      padding: 7px 11px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--surface);
+      color: var(--muted);
+      white-space: nowrap;
+      font-size: 0.9rem;
+      box-shadow: none;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--border-strong);
+    }
+
+    .status-pill.ready .status-dot {
+      background: var(--accent);
+    }
+
+    .status-pill.warn .status-dot {
+      background: var(--warning);
+    }
+
+    .status-pill.error .status-dot {
+      background: var(--danger);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(310px, 380px) minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .controls {
+      position: sticky;
+      top: 16px;
+      padding: 16px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 12px;
+      font-size: 0.84rem;
+      font-weight: 750;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+    }
+
+    .control-stack {
+      display: grid;
+      gap: 14px;
+    }
+
+    .field {
+      display: grid;
+      gap: 7px;
+    }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    label,
+    .field-label {
+      font-size: 0.86rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select {
+      width: 100%;
+      min-height: 42px;
+      border: 1px solid var(--border-strong);
+      border-radius: 7px;
+      background: #fff;
+      color: var(--text);
+      padding: 9px 11px;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.14);
+    }
+
+    input:disabled,
+    select:disabled,
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.52;
+    }
+
+    .dropzone {
+      display: grid;
+      gap: 8px;
+      place-items: center;
+      min-height: 108px;
+      padding: 16px;
+      border: 1.5px dashed var(--border-strong);
+      border-radius: var(--radius);
+      background: var(--surface-soft);
+      cursor: pointer;
+      text-align: center;
+      transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+    }
+
+    .dropzone:hover,
+    .dropzone.dragover {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .dropzone:active {
+      transform: translateY(1px);
+    }
+
+    .dropzone svg {
+      color: var(--accent);
+    }
+
+    .dropzone strong {
+      display: block;
+      font-size: 0.96rem;
+    }
+
+    .dropzone span {
+      color: var(--muted);
+      font-size: 0.86rem;
+      line-height: 1.35;
+    }
+
+    .file-input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      min-height: 38px;
+      color: var(--text);
+      font-size: 0.88rem;
+    }
+
+    .toggle-row input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--accent);
+    }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .button-row.three {
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 42px;
+      padding: 9px 12px;
+      border-radius: 7px;
+      background: var(--surface-soft);
+      color: var(--text);
+      font-weight: 740;
+      cursor: pointer;
+      transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .btn:hover:not(:disabled) {
+      background: #e4ece8;
+    }
+
+    .btn:active:not(:disabled) {
+      transform: translateY(1px);
+    }
+
+    .btn.primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .btn.primary:hover:not(:disabled) {
+      background: var(--accent-dark);
+    }
+
+    .btn.ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+
+    .btn svg {
+      width: 18px;
+      height: 18px;
+      flex: 0 0 auto;
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 2px 0;
+    }
+
+    .results {
+      min-height: 620px;
+      overflow: hidden;
+    }
+
+    .results-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 16px 12px;
+      border-bottom: 1px solid var(--border);
+      background: #fff;
+    }
+
+    .results-head h2 {
+      margin: 0;
+      font-size: 1rem;
+      letter-spacing: 0;
+    }
+
+    .tabs {
+      display: inline-flex;
+      padding: 3px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface-soft);
+    }
+
+    .tab {
+      min-height: 32px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      color: var(--muted);
+      background: transparent;
+      font-size: 0.86rem;
+      font-weight: 750;
+      cursor: pointer;
+    }
+
+    .tab.active {
+      background: #fff;
+      color: var(--text);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    }
+
+    .stats-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 18px;
+      padding: 14px 16px 0;
+    }
+
+    .stat {
+      min-width: 96px;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .stat span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .stat strong {
+      display: block;
+      margin-top: 5px;
+      font-size: 0.98rem;
+      line-height: 1.15;
+      overflow-wrap: anywhere;
+    }
+
+    .message-list {
+      display: grid;
+      gap: 8px;
+      padding: 12px 16px 0;
+    }
+
+    .message {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 9px 10px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      color: #414b45;
+      background: #f9fbfa;
+      font-size: 0.86rem;
+      line-height: 1.35;
+    }
+
+    .message.warn {
+      border-color: #ecd19a;
+      background: #fff8e8;
+      color: #754b08;
+    }
+
+    .message.error {
+      border-color: #f0b8b3;
+      background: #fff1f0;
+      color: #8b1e14;
+    }
+
+    .message svg {
+      width: 17px;
+      height: 17px;
+      flex: 0 0 auto;
+      margin-top: 1px;
+    }
+
+    .view {
+      display: none;
+      padding: 14px 16px 16px;
+    }
+
+    .view.active {
+      display: block;
+    }
+
+    .table-wrap,
+    .matrix-wrap {
+      width: 100%;
+      overflow: auto;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: #fff;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid var(--border);
+      padding: 10px 11px;
+      text-align: left;
+      vertical-align: top;
+      font-size: 0.88rem;
+      line-height: 1.32;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: #f2f6f4;
+      color: var(--muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .var-cell {
+      display: grid;
+      gap: 2px;
+      min-width: 140px;
+    }
+
+    .var-cell strong {
+      font-size: 0.9rem;
+    }
+
+    .var-cell span {
+      color: var(--muted);
+      font-size: 0.8rem;
+      overflow-wrap: anywhere;
+    }
+
+    .numeric {
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .rho {
+      font-weight: 800;
+    }
+
+    .status-ok {
+      color: var(--accent-dark);
+      font-weight: 760;
+    }
+
+    .status-warn {
+      color: var(--warning);
+      font-weight: 760;
+    }
+
+    .matrix {
+      min-width: 520px;
+      table-layout: fixed;
+    }
+
+    .matrix th,
+    .matrix td {
+      text-align: center;
+      vertical-align: middle;
+      min-width: 92px;
+      height: 54px;
+      padding: 7px;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+
+    .matrix th:first-child,
+    .matrix td:first-child {
+      min-width: 150px;
+      text-align: left;
+      background: #f8faf9;
+      font-weight: 750;
+    }
+
+    .matrix-value {
+      display: grid;
+      gap: 2px;
+      font-variant-numeric: tabular-nums;
+      font-weight: 800;
+    }
+
+    .matrix-value span {
+      font-size: 0.72rem;
+      font-weight: 650;
+      opacity: 0.78;
+    }
+
+    .empty-state {
+      display: grid;
+      place-items: center;
+      min-height: 430px;
+      padding: 30px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .empty-state-inner {
+      display: grid;
+      gap: 10px;
+      justify-items: center;
+      max-width: 390px;
+    }
+
+    .empty-state svg {
+      color: var(--muted);
+      width: 34px;
+      height: 34px;
+    }
+
+    .empty-state h3 {
+      margin: 0;
+      color: var(--text);
+      font-size: 1.05rem;
+    }
+
+    .empty-state p {
+      margin: 0;
+      line-height: 1.45;
+    }
+
+    .footer-note {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 0.78rem;
+      line-height: 1.35;
+    }
+
+    @media (max-width: 980px) {
+      .app {
+        padding: 14px;
+      }
+
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .controls {
+        position: static;
+      }
+
+      .stats-grid {
+        gap: 14px;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .field-row,
+      .button-row,
+      .button-row.three {
+        grid-template-columns: 1fr;
+      }
+
+      .results-head {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .tabs {
+        width: 100%;
+      }
+
+      .tab {
+        flex: 1;
+      }
+
+      .status-pill {
+        width: 100%;
+        white-space: normal;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="title-group">
+        <h1>Spearman</h1>
+      </div>
+      <div id="appStatus" class="status-pill" role="status" aria-live="polite">
+        <span class="status-dot"></span>
+        <span id="statusText">Nessun file</span>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside class="panel controls" aria-label="Controlli">
+        <div class="control-stack">
+          <section>
+            <p class="section-title"><i data-lucide="file-spreadsheet"></i> File</p>
+            <label class="dropzone" id="dropZone" for="fileInput">
+              <i data-lucide="upload-cloud"></i>
+              <span>
+                <strong id="fileName">Excel</strong>
+                <span id="fileMeta">.xlsx .xls .xlsm .xlsb</span>
+              </span>
+            </label>
+            <input class="file-input" id="fileInput" type="file" accept=".xlsx,.xls,.xlsm,.xlsb">
+          </section>
+
+          <div class="divider"></div>
+
+          <section class="control-stack">
+            <p class="section-title"><i data-lucide="table-2"></i> Foglio</p>
+            <div class="field">
+              <label for="sheetSelect">Foglio</label>
+              <select id="sheetSelect" disabled></select>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label for="headerRow">Nomi</label>
+                <input id="headerRow" type="number" min="1" value="1" disabled>
+              </div>
+              <div class="field">
+                <label for="dataStartRow">Dati</label>
+                <input id="dataStartRow" type="number" min="1" value="2" disabled>
+              </div>
+            </div>
+          </section>
+
+          <div class="divider"></div>
+
+          <section class="control-stack">
+            <p class="section-title"><i data-lucide="columns-3"></i> Variabili</p>
+            <div class="field">
+              <label for="columnsA">A</label>
+              <input id="columnsA" type="text" value="L" placeholder="L, N, Q" list="columnOptions" disabled>
+            </div>
+            <div class="field">
+              <label for="columnsB">B</label>
+              <input id="columnsB" type="text" value="M" placeholder="M, S, T" list="columnOptions" disabled>
+            </div>
+            <datalist id="columnOptions"></datalist>
+            <div class="field-row">
+              <div class="field">
+                <label for="minN">Min. n</label>
+                <input id="minN" type="number" min="3" value="3" disabled>
+              </div>
+              <div class="field">
+                <label for="decimals">Decimali</label>
+                <input id="decimals" type="number" min="2" max="8" value="4" disabled>
+              </div>
+            </div>
+            <label class="toggle-row" for="autoComma">
+              <span>Virgola decimale</span>
+              <input id="autoComma" type="checkbox" checked disabled>
+            </label>
+          </section>
+
+          <div class="button-row">
+            <button id="calculateBtn" class="btn primary" type="button" disabled title="Calcola Spearman">
+              <i data-lucide="calculator"></i>
+              <span>Calcola</span>
+            </button>
+            <button id="resetBtn" class="btn ghost" type="button" title="Reset">
+              <i data-lucide="rotate-ccw"></i>
+              <span>Reset</span>
+            </button>
+          </div>
+
+          <div class="button-row three">
+            <button id="csvBtn" class="btn" type="button" disabled title="Esporta CSV">
+              <i data-lucide="download"></i>
+              <span>CSV</span>
+            </button>
+            <button id="xlsxBtn" class="btn" type="button" disabled title="Esporta Excel">
+              <i data-lucide="file-down"></i>
+              <span>XLSX</span>
+            </button>
+            <button id="copyBtn" class="btn" type="button" disabled title="Copia risultati">
+              <i data-lucide="copy"></i>
+              <span>Copia</span>
+            </button>
+          </div>
+
+        </div>
+      </aside>
+
+      <section class="panel results" aria-label="Risultati">
+        <div class="results-head">
+          <h2 id="resultsTitle">Risultati</h2>
+          <div class="tabs" role="tablist" aria-label="Vista risultati">
+            <button id="tableTab" class="tab active" type="button" role="tab" aria-selected="true" data-view="table">Tabella</button>
+            <button id="matrixTab" class="tab" type="button" role="tab" aria-selected="false" data-view="matrix">Matrice</button>
+          </div>
+        </div>
+
+        <div class="stats-grid" id="statsGrid">
+          <div class="stat"><span>File</span><strong id="statFile">-</strong></div>
+          <div class="stat"><span>Righe dati</span><strong id="statRows">-</strong></div>
+          <div class="stat"><span>Colonne</span><strong id="statCols">-</strong></div>
+          <div class="stat"><span>Coppie</span><strong id="statPairs">-</strong></div>
+        </div>
+
+        <div class="message-list" id="messageList"></div>
+
+        <div id="tableView" class="view active">
+          <div id="emptyState" class="empty-state">
+            <div class="empty-state-inner" aria-label="Vuoto">
+              <i data-lucide="scatter-chart"></i>
+            </div>
+          </div>
+          <div id="tableWrap" class="table-wrap" hidden>
+            <table>
+              <thead>
+                <tr>
+                  <th>Variabile A</th>
+                  <th>Variabile B</th>
+                  <th>Spearman rho</th>
+                  <th>p-value</th>
+                  <th>n</th>
+                  <th>Righe escluse</th>
+                  <th>Stato</th>
+                </tr>
+              </thead>
+              <tbody id="resultsBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="matrixView" class="view">
+          <div id="matrixEmpty" class="empty-state">
+            <div class="empty-state-inner" aria-label="Vuoto">
+              <i data-lucide="grid-3x3"></i>
+            </div>
+          </div>
+          <div id="matrixWrap" class="matrix-wrap" hidden></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const state = {
+      workbook: null,
+      rows: [],
+      fileName: "",
+      results: [],
+      columnsA: [],
+      columnsB: [],
+      sheetWarnings: [],
+      warnings: []
+    };
+
+    const els = {
+      appStatus: document.getElementById("appStatus"),
+      statusText: document.getElementById("statusText"),
+      fileInput: document.getElementById("fileInput"),
+      dropZone: document.getElementById("dropZone"),
+      fileName: document.getElementById("fileName"),
+      fileMeta: document.getElementById("fileMeta"),
+      sheetSelect: document.getElementById("sheetSelect"),
+      headerRow: document.getElementById("headerRow"),
+      dataStartRow: document.getElementById("dataStartRow"),
+      columnsA: document.getElementById("columnsA"),
+      columnsB: document.getElementById("columnsB"),
+      columnOptions: document.getElementById("columnOptions"),
+      minN: document.getElementById("minN"),
+      decimals: document.getElementById("decimals"),
+      autoComma: document.getElementById("autoComma"),
+      calculateBtn: document.getElementById("calculateBtn"),
+      resetBtn: document.getElementById("resetBtn"),
+      csvBtn: document.getElementById("csvBtn"),
+      xlsxBtn: document.getElementById("xlsxBtn"),
+      copyBtn: document.getElementById("copyBtn"),
+      resultsTitle: document.getElementById("resultsTitle"),
+      statFile: document.getElementById("statFile"),
+      statRows: document.getElementById("statRows"),
+      statCols: document.getElementById("statCols"),
+      statPairs: document.getElementById("statPairs"),
+      messageList: document.getElementById("messageList"),
+      tableView: document.getElementById("tableView"),
+      matrixView: document.getElementById("matrixView"),
+      tableTab: document.getElementById("tableTab"),
+      matrixTab: document.getElementById("matrixTab"),
+      emptyState: document.getElementById("emptyState"),
+      tableWrap: document.getElementById("tableWrap"),
+      resultsBody: document.getElementById("resultsBody"),
+      matrixEmpty: document.getElementById("matrixEmpty"),
+      matrixWrap: document.getElementById("matrixWrap")
+    };
+
+    function setStatus(text, type = "") {
+      els.statusText.textContent = text;
+      els.appStatus.className = `status-pill ${type}`.trim();
+    }
+
+    function enableControls(enabled) {
+      [
+        els.sheetSelect,
+        els.headerRow,
+        els.dataStartRow,
+        els.columnsA,
+        els.columnsB,
+        els.minN,
+        els.decimals,
+        els.autoComma,
+        els.calculateBtn
+      ].forEach((el) => {
+        el.disabled = !enabled;
+      });
+    }
+
+    function enableExports(enabled) {
+      els.csvBtn.disabled = !enabled;
+      els.xlsxBtn.disabled = !enabled;
+      els.copyBtn.disabled = !enabled;
+    }
+
+    function indexToLetters(index) {
+      let n = index + 1;
+      let letters = "";
+      while (n > 0) {
+        const rem = (n - 1) % 26;
+        letters = String.fromCharCode(65 + rem) + letters;
+        n = Math.floor((n - 1) / 26);
+      }
+      return letters;
+    }
+
+    function lettersToIndex(value) {
+      const letters = String(value).trim().toUpperCase();
+      if (!/^[A-Z]+$/.test(letters)) return null;
+      let n = 0;
+      for (const char of letters) {
+        n = n * 26 + (char.charCodeAt(0) - 64);
+      }
+      return n - 1;
+    }
+
+    function compactText(value) {
+      if (value === null || value === undefined) return "";
+      return String(value).replace(/\s+/g, " ").trim();
+    }
+
+    function headerKey(value) {
+      return compactText(value)
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, " ")
+        .trim();
+    }
+
+    function buildHeaderInfo(rows, headerRowIndex) {
+      const map = new Map();
+      const duplicates = new Set();
+      const row = rows[headerRowIndex] || [];
+
+      row.forEach((value, index) => {
+        const key = headerKey(value);
+        if (!key) return;
+        if (map.has(key)) {
+          duplicates.add(key);
+          return;
+        }
+        map.set(key, index);
+      });
+
+      return { map, duplicates };
+    }
+
+    function parseColumnRef(ref, context = {}) {
+      const original = compactText(String(ref || "").replace(/^["']|["']$/g, ""));
+      const clean = original.toUpperCase();
+      if (!clean) return null;
+      if (/^\d+$/.test(clean)) {
+        const numeric = Number(clean);
+        return numeric > 0 ? numeric - 1 : null;
+      }
+      const letterIndex = lettersToIndex(clean);
+      const key = headerKey(original);
+      const headerIndex = context.headerMap && key ? context.headerMap.get(key) : undefined;
+
+      if (letterIndex !== null) {
+        if (headerIndex !== undefined && context.maxCols && letterIndex >= context.maxCols) {
+          return headerIndex;
+        }
+        return letterIndex;
+      }
+
+      return headerIndex !== undefined ? headerIndex : null;
+    }
+
+    function tokenizeColumnSpec(spec, context = {}) {
+      const raw = compactText(spec);
+      if (!raw) return [];
+      const cleaned = raw
+        .replace(/[“”]/g, '"')
+        .replace(/[‘’]/g, "'")
+        .replace(/\s+e\s+/gi, ",")
+        .replace(/\s*([:-])\s*/g, "$1");
+
+      const wholeHeader = context.headerMap && context.headerMap.get(headerKey(cleaned));
+      if (!/[;,]/.test(cleaned) && wholeHeader !== undefined) {
+        return [cleaned];
+      }
+
+      if (
+        !/[;,]/.test(cleaned) &&
+        /^([A-Z]{1,3}|\d+)(\s+([A-Z]{1,3}|\d+))+$/i.test(cleaned)
+      ) {
+        return cleaned.split(/\s+/).filter(Boolean);
+      }
+
+      return cleaned.split(/[;,]+/).map((item) => item.trim()).filter(Boolean);
+    }
+
+    function parseColumnSpec(spec, maxCols, context = {}) {
+      const warnings = [];
+      const seen = new Set();
+      const columns = [];
+      const parseContext = { ...context, maxCols };
+      const pieces = tokenizeColumnSpec(spec, parseContext);
+
+      for (const piece of pieces) {
+        const rangeMatch = piece.match(/^([A-Z]+|\d+)[:-]([A-Z]+|\d+)$/);
+        if (rangeMatch) {
+          const start = parseColumnRef(rangeMatch[1], parseContext);
+          const end = parseColumnRef(rangeMatch[2], parseContext);
+          if (start === null || end === null) {
+            warnings.push(`Intervallo non valido: ${piece}`);
+            continue;
+          }
+          const step = start <= end ? 1 : -1;
+          for (let idx = start; step > 0 ? idx <= end : idx >= end; idx += step) {
+            addColumn(idx);
+          }
+          continue;
+        }
+
+        const idx = parseColumnRef(piece, parseContext);
+        if (idx === null) {
+          warnings.push(`Colonna non valida: ${piece}`);
+          continue;
+        }
+        addColumn(idx);
+      }
+
+      function addColumn(idx) {
+        if (idx < 0) {
+          warnings.push(`Colonna non valida: ${idx + 1}`);
+          return;
+        }
+        if (maxCols && idx >= maxCols) {
+          warnings.push(`${indexToLetters(idx)} fuori dal foglio corrente`);
+          return;
+        }
+        if (!seen.has(idx)) {
+          seen.add(idx);
+          columns.push(idx);
+        }
+      }
+
+      return { columns, warnings };
+    }
+
+    function maxColumnCount(rows) {
+      return rows.reduce((max, row) => Math.max(max, Array.isArray(row) ? row.length : 0), 0);
+    }
+
+    function isEmptyValue(value) {
+      return value === null || value === undefined || compactText(value) === "";
+    }
+
+    function normalizeRows(rows) {
+      const normalized = Array.isArray(rows)
+        ? rows.map((row) => Array.isArray(row) ? row : [])
+        : [];
+
+      while (normalized.length && rowNonEmptyCount(normalized[normalized.length - 1]) === 0) {
+        normalized.pop();
+      }
+
+      return normalized;
+    }
+
+    function rowNonEmptyCount(row) {
+      if (!Array.isArray(row)) return 0;
+      return row.reduce((count, value) => count + (isEmptyValue(value) ? 0 : 1), 0);
+    }
+
+    function rowNumericCount(row, commaDecimal = true) {
+      if (!Array.isArray(row)) return 0;
+      return row.reduce((count, value) => count + (coerceNumber(value, commaDecimal) === null ? 0 : 1), 0);
+    }
+
+    function firstNonEmptyRowAfter(rows, startIndex) {
+      for (let index = Math.max(0, startIndex); index < rows.length; index += 1) {
+        if (rowNonEmptyCount(rows[index]) > 0) return index;
+      }
+      return -1;
+    }
+
+    function detectSheetLayout(rows, commaDecimal = true) {
+      const firstNonEmpty = firstNonEmptyRowAfter(rows, 0);
+      if (firstNonEmpty === -1) {
+        return {
+          headerRowIndex: 0,
+          dataStartRowIndex: 1,
+          warnings: ["Foglio vuoto"]
+        };
+      }
+
+      const limit = Math.min(rows.length, firstNonEmpty + 40);
+      let bestIndex = firstNonEmpty;
+      let bestScore = -Infinity;
+
+      for (let index = firstNonEmpty; index < limit; index += 1) {
+        const row = rows[index] || [];
+        const nonEmpty = rowNonEmptyCount(row);
+        if (!nonEmpty) continue;
+
+        const numeric = rowNumericCount(row, commaDecimal);
+        const next = firstNonEmptyRowAfter(rows, index + 1);
+        const nextNumeric = next === -1 ? 0 : rowNumericCount(rows[next], commaDecimal);
+        const nextNonEmpty = next === -1 ? 0 : rowNonEmptyCount(rows[next]);
+        const textLike = Math.max(0, nonEmpty - numeric);
+        const score =
+          nonEmpty * 1.2 +
+          textLike * 1.4 +
+          nextNumeric * 2.2 +
+          nextNonEmpty * 0.4 -
+          (index - firstNonEmpty) * 0.08 -
+          numeric * 1.1;
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestIndex = index;
+        }
+      }
+
+      const nextData = firstNonEmptyRowAfter(rows, bestIndex + 1);
+      return {
+        headerRowIndex: bestIndex,
+        dataStartRowIndex: nextData === -1 ? Math.min(bestIndex + 1, rows.length) : nextData,
+        warnings: []
+      };
+    }
+
+    function normalizeHeader(value) {
+      if (value === null || value === undefined) return "";
+      const text = String(value).trim();
+      return text.length > 60 ? `${text.slice(0, 57)}...` : text;
+    }
+
+    function columnLabel(colIndex, rows, headerRowIndex) {
+      const letter = indexToLetters(colIndex);
+      const header = rows[headerRowIndex] ? normalizeHeader(rows[headerRowIndex][colIndex]) : "";
+      return header ? `${letter}: ${header}` : letter;
+    }
+
+    function updateColumnOptions() {
+      els.columnOptions.textContent = "";
+      if (!state.rows.length) return;
+
+      const options = getAnalysisOptions();
+      const headerRow = state.rows[options.headerRowIndex] || [];
+      const fragment = document.createDocumentFragment();
+      const seen = new Set();
+
+      headerRow.forEach((value, index) => {
+        const header = normalizeHeader(value);
+        if (!header || seen.has(header)) return;
+        seen.add(header);
+
+        const byName = document.createElement("option");
+        byName.value = header;
+        byName.label = indexToLetters(index);
+        fragment.append(byName);
+      });
+
+      els.columnOptions.append(fragment);
+    }
+
+    function coerceNumber(value, commaDecimal) {
+      if (value === null || value === undefined || value === "") return null;
+      if (typeof value === "number") return Number.isFinite(value) ? value : null;
+      if (typeof value === "boolean") return null;
+      if (value instanceof Date) return null;
+      if (typeof value === "object") {
+        if ("v" in value) return coerceNumber(value.v, commaDecimal);
+        if ("w" in value) return coerceNumber(value.w, commaDecimal);
+        return null;
+      }
+
+      let text = String(value).trim();
+      if (!text) return null;
+      if (/^#(DIV\/0!|N\/A|VALUE!|REF!|NUM!|NAME\?|NULL!)$/i.test(text)) return null;
+
+      let percent = false;
+      let negative = false;
+      if (/^\(.+\)$/.test(text)) {
+        negative = true;
+        text = text.slice(1, -1).trim();
+      }
+      if (text.endsWith("%")) {
+        percent = true;
+        text = text.slice(0, -1).trim();
+      }
+
+      text = text
+        .replace(/\u00a0/g, " ")
+        .replace(/[€$£¥]/g, "")
+        .replace(/\s+/g, "")
+        .replace(/'/g, "");
+
+      if (!text || !/^[-+]?\d[\d.,]*(e[-+]?\d+)?$/i.test(text)) return null;
+
+      const commaIndex = text.lastIndexOf(",");
+      const dotIndex = text.lastIndexOf(".");
+      const exponentMatch = text.match(/e[-+]?\d+$/i);
+      const exponent = exponentMatch ? exponentMatch[0] : "";
+      if (exponent) {
+        text = text.slice(0, -exponent.length);
+      }
+
+      if (commaIndex !== -1 && dotIndex !== -1) {
+        if (commaIndex > dotIndex) {
+          text = text.replace(/\./g, "").replace(",", ".");
+        } else {
+          text = text.replace(/,/g, "");
+        }
+      } else if (commaIndex !== -1 && commaDecimal) {
+        const parts = text.split(",");
+        const decimal = parts.pop();
+        text = parts.join("") + "." + decimal;
+      } else if (commaIndex !== -1) {
+        text = text.replace(/,/g, "");
+      }
+
+      const number = Number(text + exponent);
+      if (!Number.isFinite(number)) return null;
+      const signed = negative ? -Math.abs(number) : number;
+      return percent ? signed / 100 : signed;
+    }
+
+    function rank(values) {
+      const indexed = values.map((value, index) => ({ value, index }));
+      indexed.sort((a, b) => a.value - b.value);
+      const ranks = new Array(values.length);
+      let i = 0;
+
+      while (i < indexed.length) {
+        let j = i + 1;
+        while (j < indexed.length && indexed[j].value === indexed[i].value) {
+          j += 1;
+        }
+        const averageRank = (i + 1 + j) / 2;
+        for (let k = i; k < j; k += 1) {
+          ranks[indexed[k].index] = averageRank;
+        }
+        i = j;
+      }
+
+      return ranks;
+    }
+
+    function pearson(x, y) {
+      const n = x.length;
+      const meanX = x.reduce((sum, value) => sum + value, 0) / n;
+      const meanY = y.reduce((sum, value) => sum + value, 0) / n;
+      let numerator = 0;
+      let sumX = 0;
+      let sumY = 0;
+
+      for (let i = 0; i < n; i += 1) {
+        const dx = x[i] - meanX;
+        const dy = y[i] - meanY;
+        numerator += dx * dy;
+        sumX += dx * dx;
+        sumY += dy * dy;
+      }
+
+      if (sumX === 0 || sumY === 0) return NaN;
+      return Math.max(-1, Math.min(1, numerator / Math.sqrt(sumX * sumY)));
+    }
+
+    function logGamma(z) {
+      const coeff = [
+        676.5203681218851,
+        -1259.1392167224028,
+        771.32342877765313,
+        -176.61502916214059,
+        12.507343278686905,
+        -0.13857109526572012,
+        9.9843695780195716e-6,
+        1.5056327351493116e-7
+      ];
+
+      if (z < 0.5) {
+        return Math.log(Math.PI) - Math.log(Math.sin(Math.PI * z)) - logGamma(1 - z);
+      }
+
+      let x = 0.99999999999980993;
+      let t;
+      z -= 1;
+      for (let i = 0; i < coeff.length; i += 1) {
+        x += coeff[i] / (z + i + 1);
+      }
+      t = z + coeff.length - 0.5;
+      return 0.5 * Math.log(2 * Math.PI) + (z + 0.5) * Math.log(t) - t + Math.log(x);
+    }
+
+    function betaContinuedFraction(a, b, x) {
+      const maxIterations = 200;
+      const epsilon = 3e-12;
+      const fpMin = 1e-30;
+      const qab = a + b;
+      const qap = a + 1;
+      const qam = a - 1;
+      let c = 1;
+      let d = 1 - (qab * x) / qap;
+      if (Math.abs(d) < fpMin) d = fpMin;
+      d = 1 / d;
+      let h = d;
+
+      for (let m = 1; m <= maxIterations; m += 1) {
+        const m2 = 2 * m;
+        let aa = (m * (b - m) * x) / ((qam + m2) * (a + m2));
+        d = 1 + aa * d;
+        if (Math.abs(d) < fpMin) d = fpMin;
+        c = 1 + aa / c;
+        if (Math.abs(c) < fpMin) c = fpMin;
+        d = 1 / d;
+        h *= d * c;
+
+        aa = (-(a + m) * (qab + m) * x) / ((a + m2) * (qap + m2));
+        d = 1 + aa * d;
+        if (Math.abs(d) < fpMin) d = fpMin;
+        c = 1 + aa / c;
+        if (Math.abs(c) < fpMin) c = fpMin;
+        d = 1 / d;
+        const delta = d * c;
+        h *= delta;
+
+        if (Math.abs(delta - 1) < epsilon) break;
+      }
+
+      return h;
+    }
+
+    function regularizedBeta(x, a, b) {
+      if (x < 0 || x > 1) return NaN;
+      if (x === 0) return 0;
+      if (x === 1) return 1;
+      const bt = Math.exp(
+        logGamma(a + b) - logGamma(a) - logGamma(b) +
+        a * Math.log(x) + b * Math.log(1 - x)
+      );
+
+      if (x < (a + 1) / (a + b + 2)) {
+        return (bt * betaContinuedFraction(a, b, x)) / a;
+      }
+      return 1 - (bt * betaContinuedFraction(b, a, 1 - x)) / b;
+    }
+
+    function studentTCdf(t, df) {
+      if (!Number.isFinite(t) || !Number.isFinite(df) || df <= 0) return NaN;
+      const x = df / (df + t * t);
+      const ib = regularizedBeta(x, df / 2, 0.5);
+      return t >= 0 ? 1 - 0.5 * ib : 0.5 * ib;
+    }
+
+    function spearman(xs, ys) {
+      if (xs.length !== ys.length || xs.length < 3) {
+        return { rho: NaN, pValue: NaN, status: "Campioni insufficienti" };
+      }
+      const rx = rank(xs);
+      const ry = rank(ys);
+      const rho = pearson(rx, ry);
+      if (!Number.isFinite(rho)) {
+        return { rho: NaN, pValue: NaN, status: "Variabile costante" };
+      }
+      if (Math.abs(rho) === 1) {
+        return { rho, pValue: 0, status: "OK" };
+      }
+      const df = xs.length - 2;
+      const t = rho * Math.sqrt(df / (1 - rho * rho));
+      const pValue = 2 * (1 - studentTCdf(Math.abs(t), df));
+      return { rho, pValue: Math.max(0, Math.min(1, pValue)), status: "OK" };
+    }
+
+    function getAnalysisOptions() {
+      const headerRowNumber = Math.max(1, Number(els.headerRow.value) || 1);
+      const dataStartRowNumber = Math.max(1, Number(els.dataStartRow.value) || headerRowNumber + 1);
+      const minN = Math.max(3, Number(els.minN.value) || 3);
+      const decimals = Math.min(8, Math.max(2, Number(els.decimals.value) || 4));
+      return {
+        headerRowIndex: headerRowNumber - 1,
+        dataStartRowIndex: dataStartRowNumber - 1,
+        headerRowNumber,
+        dataStartRowNumber,
+        minN,
+        decimals,
+        commaDecimal: els.autoComma.checked
+      };
+    }
+
+    function buildSeries(rows, colIndex, options) {
+      const valuesByRow = new Map();
+      let numeric = 0;
+      let blank = 0;
+      let invalid = 0;
+
+      for (let rowIndex = options.dataStartRowIndex; rowIndex < rows.length; rowIndex += 1) {
+        const raw = rows[rowIndex] ? rows[rowIndex][colIndex] : null;
+        if (raw === null || raw === undefined || raw === "") {
+          blank += 1;
+          continue;
+        }
+        const value = coerceNumber(raw, options.commaDecimal);
+        if (value === null) {
+          invalid += 1;
+          continue;
+        }
+        valuesByRow.set(rowIndex, value);
+        numeric += 1;
+      }
+
+      return { valuesByRow, numeric, blank, invalid };
+    }
+
+    function analyze() {
+      if (!state.rows.length) {
+        setStatus("Nessun file", "warn");
+        return;
+      }
+
+      const options = getAnalysisOptions();
+      const maxCols = maxColumnCount(state.rows);
+      const headerInfo = buildHeaderInfo(state.rows, options.headerRowIndex);
+      const parseContext = { headerMap: headerInfo.map };
+      const parsedA = parseColumnSpec(els.columnsA.value, maxCols, parseContext);
+      const parsedB = parseColumnSpec(els.columnsB.value, maxCols, parseContext);
+      const warnings = [...state.sheetWarnings, ...parsedA.warnings, ...parsedB.warnings];
+
+      if (parsedA.columns.length === 0 || parsedB.columns.length === 0) {
+        renderMessages(["Inserisci almeno una colonna valida per ogni gruppo."], "error");
+        setStatus("Colonne non valide", "error");
+        return;
+      }
+
+      if (options.dataStartRowIndex <= options.headerRowIndex) {
+        warnings.push("La riga dati e' uguale o precedente alla riga nomi.");
+      }
+      if (options.headerRowIndex >= state.rows.length) {
+        warnings.push("Riga nomi fuori dal foglio.");
+      }
+      if (options.dataStartRowIndex >= state.rows.length) {
+        warnings.push("Nessuna riga dati disponibile.");
+      }
+      if (headerInfo.duplicates.size) {
+        warnings.push("Nomi colonna duplicati: uso la prima occorrenza.");
+      }
+
+      const seriesCache = new Map();
+      const allColumns = [...new Set([...parsedA.columns, ...parsedB.columns])];
+      for (const colIndex of allColumns) {
+        seriesCache.set(colIndex, buildSeries(state.rows, colIndex, options));
+      }
+
+      const dataRowCount = Math.max(0, state.rows.length - options.dataStartRowIndex);
+      const results = [];
+
+      for (const colA of parsedA.columns) {
+        for (const colB of parsedB.columns) {
+          const seriesA = seriesCache.get(colA);
+          const seriesB = seriesCache.get(colB);
+          const xs = [];
+          const ys = [];
+
+          for (let rowIndex = options.dataStartRowIndex; rowIndex < state.rows.length; rowIndex += 1) {
+            if (seriesA.valuesByRow.has(rowIndex) && seriesB.valuesByRow.has(rowIndex)) {
+              xs.push(seriesA.valuesByRow.get(rowIndex));
+              ys.push(seriesB.valuesByRow.get(rowIndex));
+            }
+          }
+
+          let calc = { rho: NaN, pValue: NaN, status: "Campioni insufficienti" };
+          if (xs.length >= options.minN) {
+            calc = spearman(xs, ys);
+          }
+
+          results.push({
+            aColumn: indexToLetters(colA),
+            aIndex: colA,
+            aLabel: columnLabel(colA, state.rows, options.headerRowIndex),
+            bColumn: indexToLetters(colB),
+            bIndex: colB,
+            bLabel: columnLabel(colB, state.rows, options.headerRowIndex),
+            rho: calc.rho,
+            pValue: calc.pValue,
+            n: xs.length,
+            skipped: Math.max(0, dataRowCount - xs.length),
+            status: calc.status
+          });
+        }
+      }
+
+      state.results = results;
+      state.columnsA = parsedA.columns.map((idx) => ({
+        index: idx,
+        column: indexToLetters(idx),
+        label: columnLabel(idx, state.rows, options.headerRowIndex)
+      }));
+      state.columnsB = parsedB.columns.map((idx) => ({
+        index: idx,
+        column: indexToLetters(idx),
+        label: columnLabel(idx, state.rows, options.headerRowIndex)
+      }));
+      state.warnings = [...new Set(warnings)];
+
+      renderResults(options);
+      setStatus(`${results.length} coppie calcolate`, results.some((item) => item.status !== "OK") ? "warn" : "ready");
+      enableExports(results.length > 0);
+    }
+
+    function renderResults(options) {
+      const valid = state.results.filter((item) => item.status === "OK" && Number.isFinite(item.rho));
+      const strongest = valid.slice().sort((a, b) => Math.abs(b.rho) - Math.abs(a.rho))[0];
+      els.resultsTitle.textContent = state.results.length ? "Risultati Spearman" : "Risultati";
+      els.statFile.textContent = state.fileName || "-";
+      els.statRows.textContent = Math.max(0, state.rows.length - options.dataStartRowIndex).toString();
+      els.statCols.textContent = maxColumnCount(state.rows).toString();
+      els.statPairs.textContent = state.results.length.toString();
+
+      const messages = [...state.warnings];
+      if (strongest) {
+        messages.unshift(`Correlazione piu' forte: ${strongest.aColumn} vs ${strongest.bColumn}, rho ${formatNumber(strongest.rho, options.decimals)}.`);
+      }
+      if (valid.length && valid.length !== state.results.length) {
+        messages.push(`${state.results.length - valid.length} coppie senza coefficiente per n insufficiente o variabile costante.`);
+      }
+      renderMessages(messages, state.warnings.length ? "warn" : "");
+      renderTable(options);
+      renderMatrix(options);
+    }
+
+    function renderMessages(messages, forcedType = "") {
+      els.messageList.textContent = "";
+      const fragment = document.createDocumentFragment();
+      for (const message of messages) {
+        const item = document.createElement("div");
+        item.className = `message ${forcedType}`.trim();
+        const icon = document.createElement("i");
+        icon.setAttribute("data-lucide", forcedType === "error" ? "circle-alert" : forcedType === "warn" ? "triangle-alert" : "info");
+        const text = document.createElement("span");
+        text.textContent = message;
+        item.append(icon, text);
+        fragment.append(item);
+      }
+      els.messageList.append(fragment);
+      refreshIcons();
+    }
+
+    function renderTable(options) {
+      els.resultsBody.textContent = "";
+      els.emptyState.hidden = state.results.length > 0;
+      els.tableWrap.hidden = state.results.length === 0;
+
+      const fragment = document.createDocumentFragment();
+      for (const result of state.results) {
+        const row = document.createElement("tr");
+        row.append(
+          variableCell(result.aColumn, result.aLabel),
+          variableCell(result.bColumn, result.bLabel),
+          textCell(formatRho(result.rho, options.decimals), "numeric rho"),
+          textCell(formatPValue(result.pValue), "numeric"),
+          textCell(String(result.n), "numeric"),
+          textCell(String(result.skipped), "numeric"),
+          statusCell(result.status)
+        );
+        fragment.append(row);
+      }
+      els.resultsBody.append(fragment);
+    }
+
+    function variableCell(column, label) {
+      const td = document.createElement("td");
+      const wrap = document.createElement("div");
+      wrap.className = "var-cell";
+      const strong = document.createElement("strong");
+      strong.textContent = column;
+      const span = document.createElement("span");
+      span.textContent = label === column ? "" : label.replace(`${column}: `, "");
+      wrap.append(strong, span);
+      td.append(wrap);
+      return td;
+    }
+
+    function textCell(text, className = "") {
+      const td = document.createElement("td");
+      td.className = className;
+      td.textContent = text;
+      return td;
+    }
+
+    function statusCell(status) {
+      const td = document.createElement("td");
+      td.className = status === "OK" ? "status-ok" : "status-warn";
+      td.textContent = status;
+      return td;
+    }
+
+    function renderMatrix(options) {
+      els.matrixWrap.textContent = "";
+      els.matrixEmpty.hidden = state.results.length > 0;
+      els.matrixWrap.hidden = state.results.length === 0;
+      if (!state.results.length) return;
+
+      const resultMap = new Map();
+      for (const result of state.results) {
+        resultMap.set(`${result.aIndex}:${result.bIndex}`, result);
+      }
+
+      const table = document.createElement("table");
+      table.className = "matrix";
+      const thead = document.createElement("thead");
+      const headRow = document.createElement("tr");
+      headRow.append(document.createElement("th"));
+      for (const col of state.columnsB) {
+        const th = document.createElement("th");
+        th.textContent = col.label;
+        headRow.append(th);
+      }
+      thead.append(headRow);
+
+      const tbody = document.createElement("tbody");
+      for (const rowCol of state.columnsA) {
+        const tr = document.createElement("tr");
+        const first = document.createElement("td");
+        first.textContent = rowCol.label;
+        tr.append(first);
+        for (const col of state.columnsB) {
+          const result = resultMap.get(`${rowCol.index}:${col.index}`);
+          const td = document.createElement("td");
+          const finite = result && Number.isFinite(result.rho);
+          td.style.background = finite ? heatColor(result.rho) : "#f2f4f3";
+          td.style.color = finite && Math.abs(result.rho) > 0.62 ? "#fff" : "#202522";
+          const wrap = document.createElement("div");
+          wrap.className = "matrix-value";
+          const value = document.createElement("strong");
+          value.textContent = finite ? formatRho(result.rho, options.decimals) : "--";
+          const sample = document.createElement("span");
+          sample.textContent = result ? `n=${result.n}` : "";
+          wrap.append(value, sample);
+          td.append(wrap);
+          tr.append(td);
+        }
+        tbody.append(tr);
+      }
+
+      table.append(thead, tbody);
+      els.matrixWrap.append(table);
+    }
+
+    function formatNumber(value, decimals) {
+      if (!Number.isFinite(value)) return "--";
+      const abs = Math.abs(value);
+      if (abs > 0 && abs < 0.0001) return value.toExponential(2);
+      return value.toLocaleString("it-IT", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: decimals
+      });
+    }
+
+    function formatRho(value, decimals) {
+      return formatNumber(value, decimals);
+    }
+
+    function formatPValue(value) {
+      if (!Number.isFinite(value)) return "--";
+      if (value < 0.0001) return "<0.0001";
+      return value.toLocaleString("it-IT", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 6
+      });
+    }
+
+    function heatColor(rho) {
+      const amount = Math.min(1, Math.abs(rho));
+      const start = rho >= 0 ? [255, 247, 237] : [236, 253, 245];
+      const end = rho >= 0 ? [180, 83, 9] : [13, 118, 109];
+      const rgb = start.map((channel, index) => Math.round(channel + (end[index] - channel) * amount));
+      return `rgb(${rgb.join(",")})`;
+    }
+
+    function loadSheet(name) {
+      const sheet = state.workbook.Sheets[name];
+      if (!sheet) {
+        state.rows = [];
+        state.results = [];
+        state.columnsA = [];
+        state.columnsB = [];
+        state.sheetWarnings = ["Foglio non trovato"];
+        state.warnings = [];
+        enableExports(false);
+        renderInitialStats();
+        renderMessages(state.sheetWarnings, "error");
+        renderTable(getAnalysisOptions());
+        renderMatrix(getAnalysisOptions());
+        setStatus("Foglio non trovato", "error");
+        return;
+      }
+
+      state.rows = normalizeRows(XLSX.utils.sheet_to_json(sheet, {
+        header: 1,
+        raw: true,
+        defval: null,
+        blankrows: true
+      }));
+      const maxCols = maxColumnCount(state.rows);
+      const detected = detectSheetLayout(state.rows, els.autoComma.checked);
+      els.headerRow.value = String(detected.headerRowIndex + 1);
+      els.dataStartRow.value = String(detected.dataStartRowIndex + 1);
+      updateColumnOptions();
+      state.results = [];
+      state.columnsA = [];
+      state.columnsB = [];
+      state.sheetWarnings = detected.warnings;
+      state.warnings = [];
+      enableExports(false);
+      renderInitialStats();
+      renderMessages(state.sheetWarnings, state.sheetWarnings.length ? "warn" : "");
+      renderTable(getAnalysisOptions());
+      renderMatrix(getAnalysisOptions());
+      setStatus(state.rows.length ? `${state.rows.length} righe, ${maxCols} colonne` : "Foglio vuoto", state.rows.length ? "ready" : "warn");
+    }
+
+    function renderInitialStats() {
+      const options = getAnalysisOptions();
+      els.statFile.textContent = state.fileName || "-";
+      els.statRows.textContent = state.rows.length ? String(Math.max(0, state.rows.length - options.dataStartRowIndex)) : "-";
+      els.statCols.textContent = state.rows.length ? String(maxColumnCount(state.rows)) : "-";
+      els.statPairs.textContent = "-";
+      els.resultsTitle.textContent = "Risultati";
+    }
+
+    async function loadWorkbook(file) {
+      if (!window.XLSX) {
+        setStatus("Libreria Excel non disponibile", "error");
+        renderMessages(["Libreria Excel non disponibile."], "error");
+        return;
+      }
+
+      try {
+        setStatus("Lettura file...");
+        const buffer = await file.arrayBuffer();
+        const workbook = XLSX.read(buffer, { type: "array", cellDates: true });
+        state.workbook = workbook;
+        state.fileName = file.name;
+
+        if (!workbook.SheetNames.length) {
+          state.rows = [];
+          enableControls(false);
+          enableExports(false);
+          setStatus("Nessun foglio", "error");
+          renderMessages(["Il file non contiene fogli leggibili."], "error");
+          return;
+        }
+
+        els.sheetSelect.textContent = "";
+        for (const sheetName of workbook.SheetNames) {
+          const option = document.createElement("option");
+          option.value = sheetName;
+          option.textContent = sheetName;
+          els.sheetSelect.append(option);
+        }
+
+        enableControls(true);
+        els.fileName.textContent = file.name;
+        els.fileMeta.textContent = `${workbook.SheetNames.length} sheet`;
+        loadSheet(workbook.SheetNames[0]);
+      } catch (error) {
+        console.error(error);
+        setStatus("File non letto", "error");
+        renderMessages([`Errore lettura Excel: ${error.message}`], "error");
+      }
+    }
+
+    function resetAll() {
+      state.workbook = null;
+      state.rows = [];
+      state.fileName = "";
+      state.results = [];
+      state.columnsA = [];
+      state.columnsB = [];
+      state.sheetWarnings = [];
+      state.warnings = [];
+      els.fileInput.value = "";
+      els.fileName.textContent = "Excel";
+      els.fileMeta.textContent = ".xlsx .xls .xlsm .xlsb";
+      els.sheetSelect.textContent = "";
+      els.columnOptions.textContent = "";
+      els.columnsA.value = "L";
+      els.columnsB.value = "M";
+      els.headerRow.value = "1";
+      els.dataStartRow.value = "2";
+      enableControls(false);
+      enableExports(false);
+      renderInitialStats();
+      renderMessages([]);
+      renderTable(getAnalysisOptions());
+      renderMatrix(getAnalysisOptions());
+      setStatus("Nessun file");
+    }
+
+    function resultRowsForExport() {
+      return state.results.map((result) => ({
+        variable_a_column: result.aColumn,
+        variable_a_label: result.aLabel,
+        variable_b_column: result.bColumn,
+        variable_b_label: result.bLabel,
+        spearman_rho: Number.isFinite(result.rho) ? result.rho : "",
+        p_value: Number.isFinite(result.pValue) ? result.pValue : "",
+        n: result.n,
+        skipped_rows: result.skipped,
+        status: result.status
+      }));
+    }
+
+    function downloadBlob(blob, fileName) {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function escapeCsv(value) {
+      const text = String(value ?? "");
+      if (/[",\n]/.test(text)) {
+        return `"${text.replace(/"/g, '""')}"`;
+      }
+      return text;
+    }
+
+    function exportCsv() {
+      const rows = resultRowsForExport();
+      if (!rows.length) return;
+      const headers = Object.keys(rows[0]);
+      const lines = [
+        headers.join(","),
+        ...rows.map((row) => headers.map((header) => escapeCsv(row[header])).join(","))
+      ];
+      downloadBlob(new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" }), "spearman_results.csv");
+      setStatus("CSV esportato", "ready");
+    }
+
+    function exportXlsx() {
+      if (!state.results.length || !window.XLSX) return;
+      const rows = resultRowsForExport();
+      const wb = XLSX.utils.book_new();
+      const resultSheet = XLSX.utils.json_to_sheet(rows);
+      XLSX.utils.book_append_sheet(wb, resultSheet, "Spearman");
+
+      const matrixRows = state.columnsA.map((rowCol) => {
+        const row = { variable_a: rowCol.label };
+        for (const col of state.columnsB) {
+          const result = state.results.find((item) => item.aIndex === rowCol.index && item.bIndex === col.index);
+          row[col.label] = result && Number.isFinite(result.rho) ? result.rho : "";
+        }
+        return row;
+      });
+      if (matrixRows.length) {
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(matrixRows), "Matrix");
+      }
+
+      XLSX.writeFile(wb, "spearman_results.xlsx");
+      setStatus("XLSX esportato", "ready");
+    }
+
+    async function copyResults() {
+      const rows = resultRowsForExport();
+      if (!rows.length || !navigator.clipboard) return;
+      const headers = Object.keys(rows[0]);
+      const text = [
+        headers.join("\t"),
+        ...rows.map((row) => headers.map((header) => row[header]).join("\t"))
+      ].join("\n");
+      await navigator.clipboard.writeText(text);
+      setStatus("Risultati copiati", "ready");
+    }
+
+    function setActiveView(view) {
+      const isTable = view === "table";
+      els.tableView.classList.toggle("active", isTable);
+      els.matrixView.classList.toggle("active", !isTable);
+      els.tableTab.classList.toggle("active", isTable);
+      els.matrixTab.classList.toggle("active", !isTable);
+      els.tableTab.setAttribute("aria-selected", String(isTable));
+      els.matrixTab.setAttribute("aria-selected", String(!isTable));
+    }
+
+    function refreshIcons() {
+      if (window.lucide) {
+        window.lucide.createIcons();
+      }
+    }
+
+    els.fileInput.addEventListener("change", (event) => {
+      const file = event.target.files && event.target.files[0];
+      if (file) loadWorkbook(file);
+    });
+
+    els.dropZone.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      els.dropZone.classList.add("dragover");
+    });
+
+    els.dropZone.addEventListener("dragleave", () => {
+      els.dropZone.classList.remove("dragover");
+    });
+
+    els.dropZone.addEventListener("drop", (event) => {
+      event.preventDefault();
+      els.dropZone.classList.remove("dragover");
+      const file = event.dataTransfer.files && event.dataTransfer.files[0];
+      if (file) loadWorkbook(file);
+    });
+
+    els.sheetSelect.addEventListener("change", () => {
+      if (state.workbook) loadSheet(els.sheetSelect.value);
+    });
+
+    els.headerRow.addEventListener("change", () => {
+      const header = Math.max(1, Number(els.headerRow.value) || 1);
+      const dataStart = Math.max(1, Number(els.dataStartRow.value) || header + 1);
+      if (dataStart <= header) els.dataStartRow.value = String(header + 1);
+      updateColumnOptions();
+    });
+
+    els.calculateBtn.addEventListener("click", analyze);
+    els.resetBtn.addEventListener("click", resetAll);
+    els.csvBtn.addEventListener("click", exportCsv);
+    els.xlsxBtn.addEventListener("click", exportXlsx);
+    els.copyBtn.addEventListener("click", () => {
+      copyResults().catch((error) => {
+        setStatus("Copia non riuscita", "error");
+        renderMessages([error.message], "error");
+      });
+    });
+
+    els.tableTab.addEventListener("click", () => setActiveView("table"));
+    els.matrixTab.addEventListener("click", () => setActiveView("matrix"));
+
+    refreshIcons();
+    renderInitialStats();
+
+    window.SpearmanExcelTool = {
+      parseColumnSpec,
+      buildHeaderInfo,
+      detectSheetLayout,
+      spearman,
+      rank,
+      pearson,
+      coerceNumber
+    };
+  </script>
+</body>
+</html>
